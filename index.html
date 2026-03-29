@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Bronze Timer"/>
+  <meta name="theme-color" content="#111111"/>
+  <title>Bronze Melt Timer</title>
+  <style>
+    :root {
+      --bg:     #111111;
+      --card:   #1e1e1e;
+      --card2:  #2a2a2a;
+      --accent: #f5a623;
+      --text:   #ffffff;
+      --sub:    rgba(255,255,255,.65);
+      --muted:  #666;
+      --red:    #ff453a;
+      --green:  #30d158;
+      --blue:   #0a84ff;
+      --purple: #bf5af2;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: max(env(safe-area-inset-top,0px),20px)
+               max(env(safe-area-inset-right,0px),16px)
+               max(env(safe-area-inset-bottom,0px),32px)
+               max(env(safe-area-inset-left,0px),16px);
+      max-width: 430px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .hdr { text-align:center; padding: 24px 0 20px; }
+    .hdr-emoji { font-size: 48px; }
+    .hdr h1 { font-size: 26px; font-weight: 800; letter-spacing: -.4px; margin-top: 8px; }
+    .hdr p  { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+    /* Section label */
+    .lbl {
+      font-size: 11px; font-weight: 700; letter-spacing: .8px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+    }
+
+    /* ── WEIGHT INPUT SECTION ── */
+    .weight-section {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 20px 18px 16px;
+      margin-bottom: 14px;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      background: var(--card2);
+      border-radius: 16px;
+      padding: 6px 6px 6px 16px;
+      gap: 8px;
+      border: 2px solid transparent;
+      transition: border-color .2s;
+    }
+    .input-row:focus-within { border-color: var(--accent); }
+    .input-row input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      font-variant-numeric: tabular-nums;
+      -webkit-appearance: none;
+      width: 0;
+      min-width: 0;
+    }
+    .input-row input::placeholder { color: var(--muted); }
+    .input-row input::-webkit-inner-spin-button,
+    .input-row input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .unit-box {
+      background: var(--accent);
+      color: #000;
+      font-weight: 900;
+      font-size: 18px;
+      border-radius: 10px;
+      padding: 12px 16px;
+      flex-shrink: 0;
+    }
+    .presets {
+      display: flex; gap: 6px; margin-top: 12px;
+    }
+    .preset {
+      flex: 1; background: var(--card2); border: none;
+      border-radius: 10px; color: var(--sub);
+      font-size: 12px; font-weight: 600;
+      padding: 9px 2px; cursor: pointer;
+      transition: background .15s, color .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .preset.active { background: var(--accent); color: #000; }
+
+    /* ── GEO BUTTON ── */
+    .geo-btn {
+      width: 100%; background: var(--blue); color: #fff;
+      border: none; border-radius: 14px;
+      font-size: 16px; font-weight: 600; padding: 15px;
+      cursor: pointer; margin-bottom: 14px;
+      transition: opacity .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .geo-btn:disabled { opacity: .5; }
+
+    /* ── RESULT CARD ── */
+    .result-card {
+      background: linear-gradient(145deg, #1f1200, #3a2000);
+      border: 1.5px solid rgba(245,166,35,.4);
+      border-radius: 20px;
+      padding: 30px 20px 24px;
+      margin-bottom: 14px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .result-card::before {
+      content:'';position:absolute;inset:0;
+      background: radial-gradient(ellipse at 50% -10%, rgba(245,166,35,.15) 0%, transparent 65%);
+      pointer-events:none;
+    }
+    .res-lbl { font-size:12px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--accent); margin-bottom:4px; }
+    #resultMins {
+      font-size: 120px; font-weight: 900; letter-spacing: -6px;
+      line-height: .88; color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .res-unit { font-size: 20px; font-weight: 500; color: var(--accent); opacity: .7; margin-top:6px; }
+    #resultRange { font-size: 13px; color: var(--sub); margin-top: 10px; opacity: .6; }
+
+    /* ── WEATHER ROW ── */
+    .wx-row {
+      display: flex; gap: 10px; margin-bottom: 14px;
+    }
+    .wx-tile {
+      flex: 1; background: var(--card); border-radius: 16px;
+      padding: 14px 10px; text-align: center;
+    }
+    .wx-tile .icon { font-size: 26px; }
+    .wx-tile .val  { font-size: 26px; font-weight: 800; margin-top: 4px; }
+    .wx-tile .sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .wx-status {
+      background: var(--card); border-radius: 14px;
+      padding: 11px 14px; font-size: 13px; color: var(--muted);
+      text-align: center; margin-bottom: 14px;
+    }
+    .wx-status.ok   { color: var(--green); }
+    .wx-status.warn { color: var(--accent); }
+    .wx-status.bad  { color: var(--red); }
+
+    /* ── FACTORS ── */
+    .factors-section {
+      background: var(--card); border-radius: 20px;
+      padding: 18px; margin-bottom: 14px;
+    }
+    .factor-row {
+      display: flex; align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      gap: 12px;
+    }
+    .factor-row:last-child { border-bottom:none; padding-bottom:0; }
+    .f-icon { font-size: 24px; flex-shrink: 0; width: 32px; text-align: center; }
+    .f-body  { flex: 1; }
+    .f-name  { font-size: 14px; font-weight: 600; }
+    .f-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+    .f-badge {
+      font-size: 12px; font-weight: 700; padding: 5px 10px;
+      border-radius: 20px; flex-shrink: 0; white-space: nowrap;
+    }
+    .f-badge.neutral { background: rgba(255,255,255,.1); color: var(--sub); }
+    .f-badge.good    { background: rgba(48,209,88,.18);  color: var(--green); }
+    .f-badge.warn    { background: rgba(245,166,35,.18); color: var(--accent); }
+    .f-badge.bad     { background: rgba(255,69,58,.18);  color: var(--red); }
+
+    /* ── CHART ── */
+    .chart-section {
+      background: var(--card); border-radius: 20px;
+      padding: 18px 18px 14px; margin-bottom: 14px;
+    }
+    canvas { display:block; width:100%; }
+    .legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; }
+    .leg { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--sub); }
+    .leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+    /* ── SAFETY ── */
+    .safety-section {
+      background: rgba(255,69,58,.07);
+      border: 1px solid rgba(255,69,58,.2);
+      border-radius: 20px; padding: 18px; margin-bottom: 14px;
+    }
+    .s-row {
+      display:flex; gap:10px; padding: 9px 0;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      font-size: 13px; line-height: 1.5; color: var(--sub);
+    }
+    .s-row:last-child { border-bottom:none; padding-bottom:0; }
+    .s-ico { font-size:17px; flex-shrink:0; padding-top:1px; }
+
+    footer { text-align:center; color:var(--muted); font-size:11px; padding:10px 0 4px; line-height:1.7; }
+  </style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-emoji">🔥</div>
+  <h1>Bronze Melt Timer</h1>
+  <p>7 kW burner · 1 bar · Norway outdoor calibration</p>
+</div>
+
+<!-- ── Weight Input ── -->
+<div class="weight-section">
+  <div class="lbl">Bronze Weight</div>
+  <div class="input-row">
+    <input type="number" id="wt" inputmode="numeric" placeholder="0"
+           min="50" max="15000" oninput="onWtInput()" />
+    <div class="unit-box">g</div>
+  </div>
+  <div class="presets">
+    <button class="preset" onclick="setW(230,this)">230g</button>
+    <button class="preset" onclick="setW(400,this)">400g</button>
+    <button class="preset" onclick="setW(600,this)">600g</button>
+    <button class="preset" onclick="setW(1200,this)">1.2 kg</button>
+    <button class="preset" onclick="setW(2000,this)">2 kg</button>
+  </div>
+</div>
+
+<!-- ── Location + Weather ── -->
+<button class="geo-btn" id="geoBtn" onclick="getWeather()">📍 Detect My Location &amp; Weather</button>
+
+<div class="wx-row">
+  <div class="wx-tile">
+    <div class="icon">🌡️</div>
+    <div class="val" id="wxTemp">--</div>
+    <div class="sub">Temperature</div>
+  </div>
+  <div class="wx-tile">
+    <div class="icon">💨</div>
+    <div class="val" id="wxWind">--</div>
+    <div class="sub">Wind Speed</div>
+  </div>
+  <div class="wx-tile">
+    <div class="icon">💧</div>
+    <div class="val" id="wxHum">--</div>
+    <div class="sub">Humidity</div>
+  </div>
+</div>
+<div class="wx-status" id="wxMsg">Tap above to load live conditions</div>
+
+<!-- ── Result ── -->
+<div class="result-card">
+  <div class="res-lbl">Estimated Melt Time</div>
+  <div id="resultMins">--</div>
+  <div class="res-unit">minutes</div>
+  <div id="resultRange"></div>
+</div>
+
+<!-- ── Impact Factors ── -->
+<div class="factors-section">
+  <div class="lbl" style="margin-bottom:4px">What's Affecting Your Melt Time</div>
+  <div class="factor-row">
+    <div class="f-icon">⚖️</div>
+    <div class="f-body">
+      <div class="f-name">Bronze Weight</div>
+      <div class="f-desc" id="fWtDesc">Enter weight to see baseline</div>
+    </div>
+    <div class="f-badge neutral" id="fWtBadge">--</div>
+  </div>
+  <div class="factor-row">
+    <div class="f-icon">❄️</div>
+    <div class="f-body">
+      <div class="f-name">Air Temperature</div>
+      <div class="f-desc" id="fTempDesc">Cold air robs heat from the shell mold</div>
+    </div>
+    <div class="f-badge neutral" id="fTempBadge">--</div>
+  </div>
+  <div class="factor-row">
+    <div class="f-icon">💨</div>
+    <div class="f-body">
+      <div class="f-name">Wind Speed</div>
+      <div class="f-desc" id="fWindDesc">Wind strips heat directly off the burner flame</div>
+    </div>
+    <div class="f-badge neutral" id="fWindBadge">--</div>
+  </div>
+  <div class="factor-row">
+    <div class="f-icon">💧</div>
+    <div class="f-body">
+      <div class="f-name">Humidity</div>
+      <div class="f-desc" id="fHumDesc">High humidity increases steam risk in molds</div>
+    </div>
+    <div class="f-badge neutral" id="fHumBadge">--</div>
+  </div>
+  <div class="factor-row">
+    <div class="f-icon">🪨</div>
+    <div class="f-body">
+      <div class="f-name">Shell Mold Pre-heat</div>
+      <div class="f-desc">Cold or damp mold = cracking risk and longer total cycle</div>
+    </div>
+    <div class="f-badge warn" id="fMoldBadge">Check mold</div>
+  </div>
+  <div class="factor-row">
+    <div class="f-icon">⛽</div>
+    <div class="f-body">
+      <div class="f-name">Gas Pressure</div>
+      <div class="f-desc">Calibrated for 7 kW burner at 1 bar. Deviation changes all times.</div>
+    </div>
+    <div class="f-badge good">7 kW / 1 bar</div>
+  </div>
+  <div class="factor-row">
+    <div class="f-icon">🏗️</div>
+    <div class="f-body">
+      <div class="f-name">Alloy Composition</div>
+      <div class="f-desc">85% Cu · 5% Pb · 5% Zn · 5% Sn — melts at 1100°C</div>
+    </div>
+    <div class="f-badge good">Standard</div>
+  </div>
+</div>
+
+<!-- ── Prediction Chart ── -->
+<div class="chart-section">
+  <div class="lbl">Melt Time Prediction Curve</div>
+  <canvas id="chart" height="230"></canvas>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:#f5a623"></div>Ideal (15°C, calm)</div>
+    <div class="leg"><div class="leg-dot" style="background:#64b5f6"></div>Cold (−5°C)</div>
+    <div class="leg"><div class="leg-dot" style="background:#ff7070"></div>Windy (12 m/s)</div>
+    <div class="leg"><div class="leg-dot" style="background:#ce93d8"></div>Cold + Windy</div>
+    <div class="leg"><div class="leg-dot" style="background:#fff;opacity:.8"></div>Your conditions</div>
+  </div>
+</div>
+
+<!-- ── Safety ── -->
+<div class="safety-section">
+  <div class="lbl" style="color:var(--red)">⚠️ Safety Reminders</div>
+  <div class="s-row"><span class="s-ico">🔴</span><span><strong>Most dangerous gas is the one that doesn't burn.</strong> Never leave burner running unattended.</span></div>
+  <div class="s-row"><span class="s-ico">🌡️</span><span>Shell must reach <strong>red-hot</strong> before pour — all moisture must be gone or it cracks violently.</span></div>
+  <div class="s-row"><span class="s-ico">🧪</span><span><strong>Dip test:</strong> Hold cold iron rod in melt 2–3 sec. No bronze sticking = ready to pour.</span></div>
+  <div class="s-row"><span class="s-ico">🪨</span><span>Add a piece of <strong>coke</strong> to bind free oxygen. Prevents oxidation pitting on the surface.</span></div>
+  <div class="s-row"><span class="s-ico">🔧</span><span>Gas connectors use <strong>left-hand threads</strong> — prevents accidental link to O₂ (= explosion).</span></div>
+  <div class="s-row"><span class="s-ico">⚖️</span><span>Maximum safe single-operator load: <strong>15 kg</strong>. Never exceed alone.</span></div>
+</div>
+
+<footer>
+  Calibrated from David's Norwegian foundry guide<br>
+  Live weather via Open-Meteo · No data leaves your device
+</footer>
+
+<script>
+// ── Calibration table (from document + personal notes) ──────────────────
+const CURVE = [
+  [0,    11  ],
+  [230,  15  ],
+  [400,  18  ],
+  [500,  19.5],
+  [1200, 22  ],
+  [2000, 27  ],
+  [5000, 38  ],
+  [10000,40  ],
+];
+
+let wx = { temp:null, wind:null, hum:null, ready:false };
+
+function baseline(g) {
+  if (g <= CURVE[0][0]) return CURVE[0][1];
+  const last = CURVE[CURVE.length-1];
+  if (g >= last[0]) return last[1];
+  for (let i=0; i<CURVE.length-1; i++) {
+    const [x0,y0]=CURVE[i],[x1,y1]=CURVE[i+1];
+    if (g>=x0&&g<=x1) return y0+(g-x0)/(x1-x0)*(y1-y0);
+  }
+  return 20;
+}
+
+function corr(temp, wind, hum) {
+  const cT = (temp!==null && temp<10) ? (10-temp)*0.35 : 0;
+  const cW = (wind!==null && wind>5)  ? (wind-5)*0.65  : 0;
+  const cH = (hum!==null  && hum>80)  ? (hum-80)*0.05  : 0; // minor humidity effect
+  return { cT, cW, cH };
+}
+
+function totalTime(g, temp, wind, hum) {
+  const {cT,cW,cH} = corr(temp,wind,hum);
+  return baseline(g)+cT+cW+cH;
+}
+
+// ── Presets ──────────────────────────────────────────────────────────────
+function setW(g, el) {
+  document.getElementById('wt').value = g;
+  document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  calc();
+}
+function onWtInput() {
+  document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));
+  calc();
+}
+
+// ── Calculate ─────────────────────────────────────────────────────────────
+function calc() {
+  const g = parseFloat(document.getElementById('wt').value);
+  const rm = document.getElementById('resultMins');
+  const rr = document.getElementById('resultRange');
+
+  if (!g||g<=0) {
+    rm.textContent='--'; rr.textContent='';
+    updateFactors(null); drawChart(null); return;
+  }
+
+  const base = baseline(g);
+  const {cT,cW,cH} = corr(wx.temp,wx.wind,wx.hum);
+  const total = base+cT+cW+cH;
+  rm.textContent = Math.round(total);
+  rr.textContent = `Baseline ${base.toFixed(1)} min  ·  Range ${Math.max(1,Math.floor(total)-1)}–${Math.ceil(total)+2} min`;
+
+  updateFactors(g, base, cT, cW, cH);
+  drawChart(g);
+}
+
+// ── Factor badges ─────────────────────────────────────────────────────────
+function updateFactors(g, base, cT, cW, cH) {
+  // Weight
+  const fw = document.getElementById('fWtBadge');
+  const fd = document.getElementById('fWtDesc');
+  if (!g) { fw.textContent='--'; fw.className='f-badge neutral'; fd.textContent='Enter weight to see baseline'; }
+  else { fw.textContent=`${base.toFixed(1)} min`; fw.className='f-badge neutral'; fd.textContent=`${g}g → ${base.toFixed(1)} min baseline`; }
+
+  // Temp
+  const tb = document.getElementById('fTempBadge');
+  const td = document.getElementById('fTempDesc');
+  if (wx.temp===null) { tb.textContent='--'; tb.className='f-badge neutral'; td.textContent='Cold air robs heat from the shell mold'; }
+  else if (cT<0.1) { tb.textContent='No impact'; tb.className='f-badge good'; td.textContent=`${wx.temp.toFixed(1)}°C — warm enough, no correction needed`; }
+  else { tb.textContent=`+${cT.toFixed(1)} min`; tb.className= cT>3?'f-badge bad':'f-badge warn'; td.textContent=`${wx.temp.toFixed(1)}°C — cold air slows shell pre-heat`; }
+
+  // Wind
+  const wb = document.getElementById('fWindBadge');
+  const wd = document.getElementById('fWindDesc');
+  if (wx.wind===null) { wb.textContent='--'; wb.className='f-badge neutral'; wd.textContent='Wind strips heat directly off the burner flame'; }
+  else if (cW<0.1) { wb.textContent='No impact'; wb.className='f-badge good'; wd.textContent=`${wx.wind.toFixed(1)} m/s — calm enough, negligible heat loss`; }
+  else { wb.textContent=`+${cW.toFixed(1)} min`; wb.className= cW>5?'f-badge bad':'f-badge warn'; wd.textContent=`${wx.wind.toFixed(1)} m/s — shield the burner if possible`; }
+
+  // Humidity
+  const hb = document.getElementById('fHumBadge');
+  const hd = document.getElementById('fHumDesc');
+  if (wx.hum===null) { hb.textContent='--'; hb.className='f-badge neutral'; hd.textContent='High humidity increases steam risk in molds'; }
+  else if (cH<0.1) { hb.textContent='OK'; hb.className='f-badge good'; hd.textContent=`${wx.hum}% — low humidity, molds should be dry`; }
+  else { hb.textContent=`+${cH.toFixed(1)} min`; hb.className='f-badge warn'; hd.textContent=`${wx.hum}% — humid air, pre-heat molds extra carefully`; }
+
+  // Mold badge dynamic
+  const mb = document.getElementById('fMoldBadge');
+  const cold = wx.temp!==null && wx.temp<5;
+  const humid = wx.hum!==null && wx.hum>75;
+  if (cold&&humid) { mb.textContent='⚠️ Extra care'; mb.className='f-badge bad'; }
+  else if (cold||humid) { mb.textContent='Check mold'; mb.className='f-badge warn'; }
+  else if (wx.ready) { mb.textContent='✓ Conditions OK'; mb.className='f-badge good'; }
+  else { mb.textContent='Check mold'; mb.className='f-badge warn'; }
+}
+
+// ── Geolocation ───────────────────────────────────────────────────────────
+function getWeather() {
+  const btn=document.getElementById('geoBtn'), msg=document.getElementById('wxMsg');
+  btn.disabled=true; btn.textContent='⏳ Finding location…';
+  msg.className='wx-status'; msg.textContent='Requesting location permission…';
+  if (!navigator.geolocation) { msg.className='wx-status bad'; msg.textContent='Geolocation not supported in this browser.'; btn.disabled=false; return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => { btn.textContent='⏳ Fetching weather…'; loadWx(pos.coords.latitude, pos.coords.longitude); },
+    err => { msg.className='wx-status bad'; msg.textContent='Location error: '+err.message; btn.disabled=false; btn.textContent='🔁 Try Again'; },
+    {enableHighAccuracy:false,timeout:12000}
+  );
+}
+
+async function loadWx(lat,lon) {
+  const btn=document.getElementById('geoBtn'), msg=document.getElementById('wxMsg');
+  try {
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+           +`&current=temperature_2m,wind_speed_10m,relative_humidity_2m&wind_speed_unit=ms&timezone=auto`;
+    const d=await (await fetch(u)).json();
+    const temp=d.current.temperature_2m;
+    const wind=d.current.wind_speed_10m;
+    const hum=d.current.relative_humidity_2m;
+    wx={temp,wind,hum,ready:true};
+    document.getElementById('wxTemp').textContent=temp.toFixed(1)+'°C';
+    document.getElementById('wxWind').textContent=wind.toFixed(1)+' m/s';
+    document.getElementById('wxHum').textContent=hum+'%';
+
+    const warns=[];
+    if (temp<0)   warns.push('Freezing — major heat loss');
+    else if(temp<10) warns.push(`${temp.toFixed(0)}°C — cold correction active`);
+    if (wind>10)  warns.push(`Strong wind ${wind.toFixed(1)} m/s — shield burner`);
+    else if(wind>5) warns.push(`Moderate wind ${wind.toFixed(1)} m/s`);
+    if (hum>80)   warns.push(`High humidity ${hum}% — dry your molds`);
+
+    msg.className=warns.length?'wx-status warn':'wx-status ok';
+    msg.textContent=warns.length ? '⚠️ '+warns.join(' · ') : `✅ Good conditions at ${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`;
+    btn.disabled=false; btn.textContent='🔁 Refresh Weather';
+    calc();
+  } catch(e) {
+    document.getElementById('wxMsg').className='wx-status bad';
+    document.getElementById('wxMsg').textContent='Weather fetch failed: '+e.message;
+    btn.disabled=false; btn.textContent='🔁 Try Again';
+  }
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────────
+function drawChart(currentG) {
+  const cv=document.getElementById('chart');
+  const dpr=Math.min(window.devicePixelRatio||1,3);
+  const W=cv.offsetWidth||360, H=230;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext('2d'); c.scale(dpr,dpr);
+  const P={t:14,r:16,b:36,l:36};
+  const cW=W-P.l-P.r, cH=H-P.t-P.b;
+  const maxG=3000, minT=8, maxT=46;
+  const xp=g=>P.l+(g/maxG)*cW;
+  const yp=t=>P.t+cH-((t-minT)/(maxT-minT))*cH;
+
+  // background
+  c.fillStyle='#1e1e1e'; rRect(c,0,0,W,H,12); c.fill();
+
+  // grid
+  [10,15,20,25,30,35,40].forEach(t=>{
+    c.strokeStyle=t%10===0?'rgba(255,255,255,.09)':'rgba(255,255,255,.04)';
+    c.lineWidth=1; c.setLineDash([]); c.beginPath();
+    c.moveTo(P.l,yp(t)); c.lineTo(W-P.r,yp(t)); c.stroke();
+  });
+  [500,1000,1500,2000,2500,3000].forEach(g=>{
+    c.strokeStyle='rgba(255,255,255,.05)'; c.beginPath();
+    c.moveTo(xp(g),P.t); c.lineTo(xp(g),H-P.b); c.stroke();
+  });
+
+  // axis labels
+  c.fillStyle='#555'; c.font=`10px -apple-system,sans-serif`;
+  c.textAlign='right'; c.textBaseline='middle';
+  [10,20,30,40].forEach(t=>c.fillText(t+'m',P.l-5,yp(t)));
+  c.textAlign='center'; c.textBaseline='top';
+  [[0,'0'],[500,'500g'],[1000,'1kg'],[1500,'1.5k'],[2000,'2kg'],[2500,'2.5k'],[3000,'3kg']].forEach(([g,l])=>
+    c.fillText(l,xp(g),H-P.b+5));
+
+  // curves
+  const scenarios=[
+    {temp:15,wind:0,hum:50,  col:'#f5a623'},
+    {temp:-5,wind:0,hum:50,  col:'#64b5f6'},
+    {temp:15,wind:12,hum:50, col:'#ff7070'},
+    {temp:-5,wind:12,hum:70, col:'#ce93d8'},
+  ];
+  scenarios.forEach(({temp,wind,hum,col})=>{
+    c.beginPath(); c.strokeStyle=col; c.lineWidth=2; c.setLineDash([]);
+    let f=true;
+    for(let g=10;g<=maxG;g+=20){
+      const t=totalTime(g,temp,wind,hum);
+      f?c.moveTo(xp(g),yp(t)):c.lineTo(xp(g),yp(t)); f=false;
+    }
+    c.stroke();
+  });
+
+  // live conditions dashed curve
+  if(wx.ready){
+    c.beginPath(); c.strokeStyle='rgba(255,255,255,.5)'; c.lineWidth=1.5; c.setLineDash([5,4]);
+    let f=true;
+    for(let g=10;g<=maxG;g+=20){
+      const t=totalTime(g,wx.temp,wx.wind,wx.hum);
+      f?c.moveTo(xp(g),yp(t)):c.lineTo(xp(g),yp(t)); f=false;
+    }
+    c.stroke(); c.setLineDash([]);
+  }
+
+  // calibration dots
+  [[230,15],[400,18],[500,19.5],[1200,22],[2000,27]].forEach(([g,t])=>{
+    if(g>maxG)return;
+    c.beginPath(); c.arc(xp(g),yp(t),3,0,Math.PI*2);
+    c.fillStyle='rgba(245,166,35,.45)'; c.fill();
+  });
+
+  // current weight marker
+  if(currentG&&currentG>0&&currentG<=maxG){
+    const t=totalTime(currentG,wx.temp,wx.wind,wx.hum);
+    const x=xp(currentG),y=yp(t);
+    // drop line
+    c.strokeStyle='rgba(255,255,255,.18)'; c.lineWidth=1; c.setLineDash([4,4]);
+    c.beginPath(); c.moveTo(x,P.t); c.lineTo(x,H-P.b); c.stroke(); c.setLineDash([]);
+    // glow
+    c.beginPath(); c.arc(x,y,11,0,Math.PI*2);
+    c.fillStyle='rgba(245,166,35,.2)'; c.fill();
+    // dot
+    c.beginPath(); c.arc(x,y,7,0,Math.PI*2);
+    c.fillStyle='#f5a623'; c.fill();
+    c.beginPath(); c.arc(x,y,4,0,Math.PI*2);
+    c.fillStyle='#fff'; c.fill();
+    // label
+    const lbl=`${Math.round(t)} min`;
+    c.font='bold 12px -apple-system,sans-serif'; c.fillStyle='#fff';
+    c.textBaseline='middle';
+    const right=x>W*.62; c.textAlign=right?'right':'left';
+    c.fillText(lbl, x+(right?-14:14), y);
+  }
+
+  // x-axis title
+  c.fillStyle='#444'; c.font='10px -apple-system,sans-serif';
+  c.textAlign='center'; c.textBaseline='alphabetic';
+  c.fillText('Weight (grams)', P.l+cW/2, H-2);
+}
+
+function rRect(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.quadraticCurveTo(x+w,y,x+w,y+r);
+  c.lineTo(x+w,y+h-r); c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  c.lineTo(x+r,y+h); c.quadraticCurveTo(x,y+h,x,y+h-r);
+  c.lineTo(x,y+r); c.quadraticCurveTo(x,y,x+r,y); c.closePath();
+}
+
+window.addEventListener('resize',()=>drawChart(parseFloat(document.getElementById('wt').value)||null));
+drawChart(null);
+updateFactors(null);
+</script>
+</body>
+</html>
